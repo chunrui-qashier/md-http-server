@@ -18,12 +18,20 @@ program
   .argument('[directory]', 'Directory to serve (defaults to current directory)', '.')
   .option('-p, --port <port>', 'Port to listen on', '3000')
   .option('-v, --verbose', 'Enable verbose logging', false)
-  .action(async (directory: string, options: { port: string; verbose: boolean }) => {
+  .option('-w, --watch', 'Enable live reload when markdown files change', false)
+  .option('--watch-debounce <ms>', 'Debounce delay for file changes in milliseconds', '500')
+  .action(async (directory: string, options: { port: string; verbose: boolean; watch: boolean; watchDebounce: string }) => {
     try {
       const port = parseInt(options.port, 10);
 
       if (isNaN(port) || port < 1 || port > 65535) {
         console.error('Error: Port must be a number between 1 and 65535');
+        process.exit(1);
+      }
+
+      const watchDebounce = parseInt(options.watchDebounce, 10);
+      if (isNaN(watchDebounce) || watchDebounce < 0) {
+        console.error('Error: Watch debounce must be a non-negative number');
         process.exit(1);
       }
 
@@ -44,6 +52,8 @@ program
         port,
         directory: resolvedDirectory,
         verbose: options.verbose,
+        watch: options.watch,
+        watchDebounce,
       });
 
       await server.start();
@@ -51,11 +61,13 @@ program
       // Handle graceful shutdown
       process.on('SIGINT', () => {
         console.log('\n\nShutting down server...');
+        server.cleanup();
         process.exit(0);
       });
 
       process.on('SIGTERM', () => {
         console.log('\n\nShutting down server...');
+        server.cleanup();
         process.exit(0);
       });
 

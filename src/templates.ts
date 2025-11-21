@@ -1,7 +1,7 @@
 /**
  * HTML template for rendering markdown content
  */
-export function getMarkdownTemplate(title: string, content: string, tocHtml: string = ''): string {
+export function getMarkdownTemplate(title: string, content: string, tocHtml: string = '', watchEnabled: boolean = false): string {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -696,6 +696,79 @@ export function getMarkdownTemplate(title: string, content: string, tocHtml: str
 
       // Initial update
       updateActiveToc();
+    })();
+  </script>
+  ` : ''}
+
+  ${watchEnabled ? `
+  <script>
+    // Live Reload Client
+    (function() {
+      const currentPath = window.location.pathname;
+      let eventSource = null;
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 10;
+      const baseDelay = 1000; // 1 second
+
+      function connect() {
+        if (eventSource) {
+          eventSource.close();
+        }
+
+        const url = '/api/live-reload?file=' + encodeURIComponent(currentPath);
+        console.log('[LiveReload] Connecting to:', url);
+
+        eventSource = new EventSource(url);
+
+        eventSource.addEventListener('open', () => {
+          console.log('[LiveReload] Connected');
+          reconnectAttempts = 0;
+        });
+
+        eventSource.addEventListener('message', (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log('[LiveReload] Received:', data);
+
+            if (data.type === 'change') {
+              console.log('[LiveReload] File changed, reloading...');
+              window.location.reload();
+            } else if (data.type === 'deleted') {
+              console.log('[LiveReload] File deleted');
+              alert('The file has been deleted.');
+            } else if (data.type === 'error') {
+              console.error('[LiveReload] Server error:', data.message);
+            }
+          } catch (error) {
+            console.error('[LiveReload] Error parsing message:', error);
+          }
+        });
+
+        eventSource.addEventListener('error', (error) => {
+          console.error('[LiveReload] Connection error:', error);
+          eventSource.close();
+
+          // Attempt to reconnect with exponential backoff
+          if (reconnectAttempts < maxReconnectAttempts) {
+            const delay = Math.min(baseDelay * Math.pow(2, reconnectAttempts), 30000);
+            reconnectAttempts++;
+            console.log(\`[LiveReload] Reconnecting in \${delay}ms (attempt \${reconnectAttempts}/\${maxReconnectAttempts})...\`);
+            setTimeout(connect, delay);
+          } else {
+            console.error('[LiveReload] Max reconnection attempts reached. Please refresh the page.');
+          }
+        });
+      }
+
+      // Start connection
+      connect();
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+      });
     })();
   </script>
   ` : ''}
