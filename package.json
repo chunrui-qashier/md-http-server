@@ -4,7 +4,7 @@
   "description": "A simple HTTP server for rendering markdown files with Mermaid diagrams, Table of Contents, and Live Reload",
   "main": "dist/index.js",
   "bin": {
-    "md-http-server": "./dist/cli.js"
+    "md-http-server": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -33,7 +33,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/chunrui-qashier/md-http-server.git"
+    "url": "git+https://github.com/chunrui-qashier/md-http-server.git"
   },
   "bugs": {
     "url": "https://github.com/chunrui-qashier/md-http-server/issues"
