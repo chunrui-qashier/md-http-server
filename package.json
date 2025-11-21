@@ -31,6 +31,14 @@
   ],
   "author": "",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chunrui-qashier/md-http-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chunrui-qashier/md-http-server/issues"
+  },
+  "homepage": "https://github.com/chunrui-qashier/md-http-server#readme",
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^11.1.0",
