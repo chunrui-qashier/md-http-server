@@ -3,11 +3,15 @@ import { marked } from 'marked';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getMarkdownTemplate, getDirectoryTemplate } from './templates';
+import { FileWatcherManager, WatcherClient } from './watcher';
+import { randomUUID } from 'crypto';
 
 export interface ServerOptions {
   port: number;
   directory: string;
   verbose?: boolean;
+  watch?: boolean;
+  watchDebounce?: number;
 }
 
 /**
@@ -15,10 +19,13 @@ export interface ServerOptions {
  */
 export function createServer(options: ServerOptions) {
   const app = express();
-  const { port, directory, verbose = false } = options;
+  const { port, directory, verbose = false, watch = false, watchDebounce = 500 } = options;
 
   // Resolve the absolute path
   const rootDir = path.resolve(directory);
+
+  // Initialize file watcher manager if watch is enabled
+  const fileWatcher = watch ? new FileWatcherManager(watchDebounce) : null;
 
   // Verify directory exists
   if (!fs.existsSync(rootDir)) {
@@ -55,6 +62,64 @@ export function createServer(options: ServerOptions) {
       next();
     });
   }
+
+  // SSE endpoint for live reload
+  app.get('/api/live-reload', (req: Request, res: Response) => {
+    if (!fileWatcher) {
+      return res.status(503).json({ error: 'Live reload is not enabled' });
+    }
+
+    const fileParam = req.query.file as string;
+    if (!fileParam) {
+      return res.status(400).json({ error: 'Missing file parameter' });
+    }
+
+    // Validate and resolve file path
+    const safePath = path.normalize(fileParam).replace(/^(\.\.(\/|\\|$))+/, '');
+    const fullPath = path.join(rootDir, safePath);
+
+    // Ensure the resolved path is within the root directory
+    if (!fullPath.startsWith(rootDir)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Check if file exists
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Set up SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable buffering for nginx
+
+    // Send initial connection message
+    res.write(`data: ${JSON.stringify({ type: 'connected', filePath: fullPath, timestamp: Date.now() })}\n\n`);
+
+    // Create client
+    const client: WatcherClient = {
+      id: randomUUID(),
+      filePath: fullPath,
+      res,
+      lastUpdate: Date.now(),
+    };
+
+    // Register client with file watcher
+    fileWatcher.watchFile(fullPath, client);
+
+    if (verbose) {
+      console.log(`[LiveReload] Client ${client.id} connected for ${fullPath}`);
+    }
+
+    // Handle client disconnect
+    req.on('close', () => {
+      fileWatcher.unwatchFile(client.id);
+      if (verbose) {
+        console.log(`[LiveReload] Client ${client.id} disconnected`);
+      }
+    });
+  });
 
   // Main request handler
   app.get('*', async (req: Request, res: Response) => {
@@ -231,8 +296,8 @@ export function createServer(options: ServerOptions) {
     // Get the file name for the title
     const fileName = path.basename(fullPath, '.md');
 
-    // Wrap in HTML template with TOC data
-    const html = getMarkdownTemplate(fileName, htmlContent, tocHtml);
+    // Wrap in HTML template with TOC data and watch flag
+    const html = getMarkdownTemplate(fileName, htmlContent, tocHtml, watch);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
@@ -247,6 +312,9 @@ export function createServer(options: ServerOptions) {
             console.log(`\nMarkdown Server running at:`);
             console.log(`  Local:   http://localhost:${port}`);
             console.log(`  Serving: ${rootDir}`);
+            if (watch) {
+              console.log(`  Live Reload: Enabled (debounce: ${watchDebounce}ms)`);
+            }
             console.log(`\nPress Ctrl+C to stop\n`);
             resolve();
           });
@@ -258,10 +326,26 @@ export function createServer(options: ServerOptions) {
               reject(error);
             }
           });
+
+          // Cleanup on shutdown
+          const cleanup = () => {
+            if (fileWatcher) {
+              fileWatcher.cleanup();
+            }
+            server.close();
+          };
+
+          process.on('SIGINT', cleanup);
+          process.on('SIGTERM', cleanup);
         } catch (error) {
           reject(error);
         }
       });
+    },
+    cleanup: () => {
+      if (fileWatcher) {
+        fileWatcher.cleanup();
+      }
     }
   };
 }

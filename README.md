@@ -6,6 +6,8 @@ A simple, fast HTTP server for rendering Markdown files with beautiful default s
 
 - 📝 **Automatic Markdown Rendering** - View `.md` files as beautifully formatted HTML
 - 📊 **Mermaid Diagram Support** - Render flowcharts, sequence diagrams, and more
+- 🔄 **Live Reload** - Automatically refresh when markdown files change
+- 📑 **Table of Contents** - Auto-generated TOC sidebar with active section highlighting
 - 📁 **Directory Browsing** - Navigate through folders with an intuitive interface
 - 🎨 **GitHub-style Styling** - Clean, readable default theme
 - 🚀 **Zero Configuration** - Works out of the box
@@ -56,6 +58,14 @@ npx md-http-server ./docs
 npx md-http-server -p 8080
 ```
 
+### Live Reload
+
+Enable automatic page refresh when markdown files change:
+
+```bash
+npx md-http-server --watch
+```
+
 ### Verbose Logging
 
 ```bash
@@ -65,7 +75,7 @@ npx md-http-server -v
 ### All Options
 
 ```bash
-npx md-http-server [directory] -p [port] -v
+npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms]
 ```
 
 **Arguments:**
@@ -74,6 +84,8 @@ npx md-http-server [directory] -p [port] -v
 **Options:**
 - `-p, --port <port>` - Port to listen on (default: 3000)
 - `-v, --verbose` - Enable verbose logging
+- `-w, --watch` - Enable live reload when markdown files change
+- `--watch-debounce <ms>` - Debounce delay for file changes in milliseconds (default: 500)
 - `-V, --version` - Output version number
 - `-h, --help` - Display help
 
@@ -107,6 +119,16 @@ Browse and view your markdown notes:
 npx md-http-server ~/Documents/notes
 ```
 
+### Development with Live Reload
+
+Edit markdown files and see changes instantly:
+
+```bash
+npx md-http-server ./docs --watch --verbose
+# Open http://localhost:3000/your-file.md
+# Edit the file in your editor, save, and watch the browser auto-reload!
+```
+
 ## Programmatic Usage
 
 You can also use md-http-server as a library in your Node.js applications:
@@ -117,7 +139,9 @@ import { createServer } from 'md-http-server';
 const server = createServer({
   port: 3000,
   directory: './content',
-  verbose: true
+  verbose: true,
+  watch: true,
+  watchDebounce: 500
 });
 
 await server.start();
@@ -159,6 +183,42 @@ Supported diagram types:
 - **User Journey Maps** - UX workflows
 
 All diagrams are rendered client-side using [Mermaid.js](https://mermaid.js.org/).
+
+### Live Reload
+
+The live reload feature automatically refreshes your browser when markdown files change, making it perfect for writing and previewing documentation.
+
+**How it works:**
+1. Enable with the `--watch` flag
+2. Open any markdown file in your browser
+3. Edit and save the file in your text editor
+4. The browser automatically reloads to show your changes
+
+**Features:**
+- ⚡ Fast change detection (< 1 second)
+- 🔄 Automatic reconnection if connection drops
+- 🎯 Only reloads the specific file being viewed
+- ⏱️ Configurable debounce delay to prevent excessive reloads
+- 🔌 Uses Server-Sent Events (SSE) for efficient real-time updates
+
+**Example:**
+```bash
+# Start server with live reload
+npx md-http-server --watch
+
+# Custom debounce delay (wait 1 second after file changes)
+npx md-http-server --watch --watch-debounce 1000
+```
+
+### Table of Contents
+
+Automatically generates a Table of Contents for your markdown files with:
+- 📑 Floating sidebar with all headings
+- ✨ Active section highlighting as you scroll
+- 🖱️ Smooth scrolling to sections
+- 💾 Remembers open/closed state
+
+You can also insert a TOC manually anywhere in your document using `[TOC]` or `[[toc]]`.
 
 ### Directory Browsing
 
