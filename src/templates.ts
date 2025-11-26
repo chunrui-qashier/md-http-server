@@ -869,3 +869,175 @@ function escapeHtml(text: string): string {
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
+
+/**
+ * T024: Error page template for authentication failures
+ */
+const AUTH_ERROR_MESSAGES: Record<string, { title: string; message: string }> = {
+  AUTH_DENIED: {
+    title: 'Access Denied',
+    message: 'You denied access to your Google account. Authentication is required to view this content.',
+  },
+  AUTH_FAILED: {
+    title: 'Authentication Failed',
+    message: 'Something went wrong during authentication. Please try again.',
+  },
+  DOMAIN_BLOCKED: {
+    title: 'Domain Not Allowed',
+    message: 'Your email domain is not authorized to access this content.',
+  },
+  STATE_MISMATCH: {
+    title: 'Invalid Request',
+    message: 'The authentication request was invalid or expired. Please try logging in again.',
+  },
+  SESSION_EXPIRED: {
+    title: 'Session Expired',
+    message: 'Your session has expired. Please log in again to continue.',
+  },
+};
+
+export function getAuthErrorTemplate(errorCode: string): string {
+  const errorInfo = AUTH_ERROR_MESSAGES[errorCode] || {
+    title: 'Authentication Error',
+    message: 'An error occurred during authentication.',
+  };
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(errorInfo.title)}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #24292e;
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .error-container {
+      background: white;
+      padding: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .error-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      color: #d73a49;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: #586069;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #0366d6;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      background: #0256b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="error-icon">🔒</div>
+    <h1>${escapeHtml(errorInfo.title)}</h1>
+    <p>${escapeHtml(errorInfo.message)}</p>
+    <a href="/__auth/login" class="btn">Try Again</a>
+  </div>
+</body>
+</html>
+  `.trim();
+}
+
+/**
+ * T031: Logout confirmation page template
+ */
+export function getLogoutTemplate(): string {
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logged Out</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      line-height: 1.6;
+      color: #24292e;
+      max-width: 600px;
+      margin: 100px auto;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    .logout-container {
+      background: white;
+      padding: 3rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .logout-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    h1 {
+      color: #28a745;
+      margin-bottom: 1rem;
+    }
+
+    p {
+      color: #586069;
+      margin-bottom: 2rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: #0366d6;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      background: #0256b9;
+    }
+  </style>
+</head>
+<body>
+  <div class="logout-container">
+    <div class="logout-icon">👋</div>
+    <h1>You have been logged out</h1>
+    <p>You have successfully signed out. To access protected content, you'll need to log in again.</p>
+    <a href="/__auth/login" class="btn">Log in again</a>
+  </div>
+</body>
+</html>
+  `.trim();
+}

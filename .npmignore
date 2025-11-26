@@ -7,3 +7,14 @@ tsconfig.json
 node_modules/
 .git/
 .gitignore
+
+# Speckit and development files
+.claude/
+.codex/
+.specify/
+specs/
+design/
+CLAUDE.md
+GEMINI.md
+.md-server-auth.json
+.md-server-auth.json.template

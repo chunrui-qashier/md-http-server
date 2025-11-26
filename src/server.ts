@@ -5,6 +5,10 @@ import * as path from 'path';
 import { getMarkdownTemplate, getDirectoryTemplate } from './templates';
 import { FileWatcherManager, WatcherClient } from './watcher';
 import { randomUUID } from 'crypto';
+import { AuthConfig } from './auth';
+import { createSessionMiddleware } from './auth/session';
+import { createAuthMiddleware } from './auth/middleware';
+import { createAuthRoutes, createLogoutRoute } from './auth/routes';
 
 export interface ServerOptions {
   port: number;
@@ -12,6 +16,7 @@ export interface ServerOptions {
   verbose?: boolean;
   watch?: boolean;
   watchDebounce?: number;
+  authConfig?: AuthConfig;
 }
 
 /**
@@ -19,7 +24,7 @@ export interface ServerOptions {
  */
 export function createServer(options: ServerOptions) {
   const app = express();
-  const { port, directory, verbose = false, watch = false, watchDebounce = 500 } = options;
+  const { port, directory, verbose = false, watch = false, watchDebounce = 500, authConfig } = options;
 
   // Resolve the absolute path
   const rootDir = path.resolve(directory);
@@ -61,6 +66,19 @@ export function createServer(options: ServerOptions) {
       console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
       next();
     });
+  }
+
+  // T015, T016, T026: Auth middleware and routes setup
+  if (authConfig) {
+    // T015: Session middleware
+    app.use(createSessionMiddleware(authConfig));
+
+    // T026: Auth routes (must be before auth middleware)
+    app.use('/__auth', createAuthRoutes(authConfig, verbose));
+    app.get('/__logout', createLogoutRoute(verbose));
+
+    // T016: Auth middleware (protects all routes)
+    app.use(createAuthMiddleware({ verbose }));
   }
 
   // SSE endpoint for live reload
@@ -314,6 +332,13 @@ export function createServer(options: ServerOptions) {
             console.log(`  Serving: ${rootDir}`);
             if (watch) {
               console.log(`  Live Reload: Enabled (debounce: ${watchDebounce}ms)`);
+            }
+            // T017: Auth startup logging
+            if (authConfig) {
+              console.log(`  Auth: Google OAuth enabled`);
+              if (authConfig.allowedDomains) {
+                console.log(`  Allowed domains: ${authConfig.allowedDomains.join(', ')}`);
+              }
             }
             console.log(`\nPress Ctrl+C to stop\n`);
             resolve();
