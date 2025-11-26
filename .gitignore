@@ -5,3 +5,5 @@ dist/
 *.tgz
 test-content/
 .claude/
+.env*
+.md-server-auth.json

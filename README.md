@@ -12,6 +12,7 @@ A simple, fast HTTP server for rendering Markdown files with beautiful default s
 - 🎨 **GitHub-style Styling** - Clean, readable default theme
 - 🚀 **Zero Configuration** - Works out of the box
 - 🔒 **Security** - Path traversal protection built-in
+- 🔐 **Google OAuth** - Optional authentication to protect your content
 - ⚡ **Fast** - Built with Express and Marked
 
 ## Installation
@@ -72,10 +73,20 @@ npx md-http-server --watch
 npx md-http-server -v
 ```
 
+### Google OAuth Authentication
+
+Protect your content with Google OAuth authentication:
+
+```bash
+npx md-http-server --auth
+```
+
+See [Authentication](#authentication) section for full setup instructions.
+
 ### All Options
 
 ```bash
-npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms]
+npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms] --auth --auth-config [path]
 ```
 
 **Arguments:**
@@ -86,6 +97,8 @@ npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms]
 - `-v, --verbose` - Enable verbose logging
 - `-w, --watch` - Enable live reload when markdown files change
 - `--watch-debounce <ms>` - Debounce delay for file changes in milliseconds (default: 500)
+- `--auth` - Enable Google OAuth authentication
+- `--auth-config <path>` - Path to auth config file (default: `.md-server-auth.json`)
 - `-V, --version` - Output version number
 - `-h, --help` - Display help
 
@@ -142,6 +155,27 @@ const server = createServer({
   verbose: true,
   watch: true,
   watchDebounce: 500
+});
+
+await server.start();
+```
+
+### With Authentication
+
+```typescript
+import { createServer, loadAuthConfig } from 'md-http-server';
+
+// Load auth config from file
+const authResult = loadAuthConfig('./.md-server-auth.json');
+if (!authResult.success) {
+  console.error('Auth config error:', authResult.error);
+  process.exit(1);
+}
+
+const server = createServer({
+  port: 3000,
+  directory: './content',
+  authConfig: authResult.config
 });
 
 await server.start();
@@ -227,6 +261,82 @@ When accessing a directory, you'll see:
 - 📄 Markdown files (rendered as HTML)
 - 📎 Other files (served as-is)
 - Parent directory link (..) for navigation
+
+### Authentication
+
+Enable Google OAuth authentication to protect your markdown content.
+
+#### Setup
+
+1. **Create a Google Cloud Project**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing one
+   - Enable the "Google+ API" or "People API"
+
+2. **Create OAuth Credentials**
+   - Navigate to APIs & Services > Credentials
+   - Create OAuth 2.0 Client ID
+   - Application type: Web application
+   - Add authorized redirect URI: `http://localhost:3000/__auth/callback`
+   - Copy the Client ID and Client Secret
+
+3. **Create Config File**
+
+   Create `.md-server-auth.json` in your project root:
+
+   ```json
+   {
+     "clientId": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+     "clientSecret": "YOUR_CLIENT_SECRET",
+     "allowedDomains": ["example.com"]
+   }
+   ```
+
+   **Config Options:**
+   - `clientId` (required) - Google OAuth Client ID
+   - `clientSecret` (required) - Google OAuth Client Secret
+   - `callbackUrl` (optional) - Override auto-detected callback URL
+   - `allowedDomains` (optional) - Restrict login to specific email domains
+   - `sessionSecret` (optional) - Session encryption secret (auto-generated if not provided)
+   - `sessionMaxAge` (optional) - Session duration in milliseconds (default: 24 hours)
+
+4. **Start Server with Auth**
+
+   ```bash
+   npx md-http-server --auth
+   ```
+
+#### Domain Restriction
+
+Restrict access to users from specific email domains:
+
+```json
+{
+  "clientId": "...",
+  "clientSecret": "...",
+  "allowedDomains": ["company.com", "partner.org"]
+}
+```
+
+Only users with `@company.com` or `@partner.org` email addresses can access the content.
+
+#### Auth Routes
+
+When authentication is enabled, these routes are available:
+- `/__auth/login` - Initiates Google OAuth flow
+- `/__auth/callback` - OAuth callback (internal use)
+- `/__auth/error` - Displays authentication errors
+- `/__logout` - Logs out current user
+
+#### Security Considerations
+
+- **Never commit `.md-server-auth.json`** - Add it to your `.gitignore`:
+  ```
+  .md-server-auth.json
+  ```
+- Uses PKCE (Proof Key for Code Exchange) for secure OAuth flow
+- Sessions are stored in-memory (restarting server logs out all users)
+- All routes are protected including static assets
 
 ### Security
 

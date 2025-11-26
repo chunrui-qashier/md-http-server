@@ -4,12 +4,23 @@ import { Command } from 'commander';
 import { createServer } from './server';
 import * as path from 'path';
 import * as fs from 'fs';
+import { loadAuthConfig, AuthConfig } from './auth';
 
 const program = new Command();
 
 // Read package.json for version
 const packageJsonPath = path.join(__dirname, '..', 'package.json');
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+
+// T011: CLI options interface with auth
+interface CliOptions {
+  port: string;
+  verbose: boolean;
+  watch: boolean;
+  watchDebounce: string;
+  auth: boolean;
+  authConfig: string;
+}
 
 program
   .name('md-http-server')
@@ -20,7 +31,9 @@ program
   .option('-v, --verbose', 'Enable verbose logging', false)
   .option('-w, --watch', 'Enable live reload when markdown files change', false)
   .option('--watch-debounce <ms>', 'Debounce delay for file changes in milliseconds', '500')
-  .action(async (directory: string, options: { port: string; verbose: boolean; watch: boolean; watchDebounce: string }) => {
+  .option('--auth', 'Enable Google OAuth authentication', false)
+  .option('--auth-config <path>', 'Path to auth config file', '.md-server-auth.json')
+  .action(async (directory: string, options: CliOptions) => {
     try {
       const port = parseInt(options.port, 10);
 
@@ -48,12 +61,27 @@ program
         process.exit(1);
       }
 
+      // T012, T018: Load and validate auth config if --auth is enabled
+      let authConfig: AuthConfig | undefined;
+      if (options.auth) {
+        const configResult = loadAuthConfig(options.authConfig, resolvedDirectory);
+        if (!configResult.success) {
+          console.error(`Error: ${configResult.error.message}`);
+          if (configResult.error.details) {
+            console.error(`  Details: ${configResult.error.details}`);
+          }
+          process.exit(1);
+        }
+        authConfig = configResult.config;
+      }
+
       const server = createServer({
         port,
         directory: resolvedDirectory,
         verbose: options.verbose,
         watch: options.watch,
         watchDebounce,
+        authConfig,
       });
 
       await server.start();

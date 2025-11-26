@@ -1,0 +1,8 @@
+{
+  "clientId": "YOUR_CLIENT_ID.apps.googleusercontent.com",
+  "clientSecret": "YOUR_CLIENT_SECRET",
+  "allowedDomains": ["example.com"],
+  "callbackUrl": null,
+  "sessionSecret": null,
+  "sessionMaxAge": 86400000
+}
