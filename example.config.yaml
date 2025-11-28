@@ -1,0 +1,18 @@
+# md-http-server configuration example
+# See README.md for full documentation
+
+directory: ./docs
+port: 8080
+verbose: false
+watch: true
+watchDebounce: 500
+
+# Google OAuth authentication (optional)
+# Uncomment and configure to enable authentication
+# authProvider: GOOGLE
+# authConfig:
+#   clientId: ${GOOGLE_CLIENT_ID}
+#   clientSecret: ${GOOGLE_CLIENT_SECRET}
+#   sessionSecret: ${SESSION_SECRET}
+#   allowedDomains:
+#     - yourcompany.com

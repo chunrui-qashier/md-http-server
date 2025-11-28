@@ -1,0 +1,8 @@
+directory: ./docs
+port: 3000
+verbose: true
+authProvider: GOOGLE
+authConfig:
+  clientId: ${GOOGLE_CLIENT_ID}
+  clientSecret: ${GOOGLE_CLIENT_SECRET}
+  sessionSecret: ${SESSION_SECRET}

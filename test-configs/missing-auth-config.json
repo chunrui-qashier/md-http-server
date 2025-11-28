@@ -1,0 +1,5 @@
+{
+  "directory": "./docs",
+  "port": 3000,
+  "authProvider": "GOOGLE"
+}

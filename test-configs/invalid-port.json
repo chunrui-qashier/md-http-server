@@ -1,0 +1,5 @@
+{
+  "directory": "./docs",
+  "port": "abc",
+  "verbose": true
+}
