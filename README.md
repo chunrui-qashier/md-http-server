@@ -86,13 +86,14 @@ See [Authentication](#authentication) section for full setup instructions.
 ### All Options
 
 ```bash
-npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms] --auth --auth-config [path]
+npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms] --auth --auth-config [path] --config [path]
 ```
 
 **Arguments:**
 - `directory` - Directory to serve (default: current directory)
 
 **Options:**
+- `-c, --config <path>` - Path to config file (JSON or YAML)
 - `-p, --port <port>` - Port to listen on (default: 3000)
 - `-v, --verbose` - Enable verbose logging
 - `-w, --watch` - Enable live reload when markdown files change
@@ -101,6 +102,130 @@ npx md-http-server [directory] -p [port] -v -w --watch-debounce [ms] --auth --au
 - `--auth-config <path>` - Path to auth config file (default: `.md-server-auth.json`)
 - `-V, --version` - Output version number
 - `-h, --help` - Display help
+
+**Subcommands:**
+- `init` - Create a configuration file interactively
+- `validate --config <path>` - Validate a configuration file
+
+## Configuration File
+
+Instead of passing options via command line, you can store all settings in a configuration file.
+
+### Creating a Config File
+
+**Interactive creation:**
+```bash
+npx md-http-server init
+```
+
+Answer the prompts to create `md-server.config.json`.
+
+**Manual creation:**
+
+Create `md-server.config.json` (JSON format):
+```json
+{
+  "directory": "./docs",
+  "port": 8080,
+  "verbose": false,
+  "watch": true,
+  "watchDebounce": 500
+}
+```
+
+Or `md-server.config.yaml` (YAML format):
+```yaml
+directory: ./docs
+port: 8080
+verbose: false
+watch: true
+watchDebounce: 500
+```
+
+### Using a Config File
+
+```bash
+npx md-http-server --config ./md-server.config.json
+```
+
+### Environment Variables
+
+Use `${VAR_NAME}` syntax for sensitive values:
+
+```json
+{
+  "authProvider": "GOOGLE",
+  "authConfig": {
+    "clientId": "${GOOGLE_CLIENT_ID}",
+    "clientSecret": "${GOOGLE_CLIENT_SECRET}",
+    "sessionSecret": "${SESSION_SECRET:-dev-secret-change-me}"
+  }
+}
+```
+
+The `:-` syntax provides a default value if the environment variable is not set.
+
+### Configuration with Google OAuth
+
+Full example with authentication:
+
+```yaml
+directory: ./docs
+port: 8080
+watch: true
+
+authProvider: GOOGLE
+authConfig:
+  clientId: ${GOOGLE_CLIENT_ID}
+  clientSecret: ${GOOGLE_CLIENT_SECRET}
+  sessionSecret: ${SESSION_SECRET}
+  allowedDomains:
+    - yourcompany.com
+```
+
+### Priority Order
+
+Settings are applied in this order (highest priority last):
+
+1. Built-in defaults
+2. Configuration file values
+3. Command-line arguments
+
+**Example:**
+```bash
+# Config file sets port to 8080, but CLI overrides to 3000
+npx md-http-server --config config.json --port 3000
+```
+
+### Validating Config Files
+
+Ensure your configuration file is valid:
+
+```bash
+npx md-http-server validate --config ./md-server.config.json
+```
+
+This checks:
+- File format (valid JSON/YAML)
+- Required fields when authentication is enabled
+- Value types and ranges
+- Environment variable references
+
+### Available Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `directory` | string | `.` | Directory to serve |
+| `port` | number | `3000` | Server port (1-65535) |
+| `verbose` | boolean | `false` | Enable verbose logging |
+| `watch` | boolean | `false` | Enable live reload |
+| `watchDebounce` | number | `500` | Debounce delay in ms |
+| `authProvider` | string/null | `null` | OAuth provider (`"GOOGLE"` or `null`) |
+| `authConfig.clientId` | string | - | OAuth Client ID (required if authProvider set) |
+| `authConfig.clientSecret` | string | - | OAuth Client Secret (required if authProvider set) |
+| `authConfig.sessionSecret` | string | - | Session encryption secret |
+| `authConfig.callbackUrl` | string | - | OAuth callback URL (auto-detected) |
+| `authConfig.allowedDomains` | string[] | `[]` | Restrict login to email domains |
 
 ## Examples
 

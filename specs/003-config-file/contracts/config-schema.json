@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/chunrui-qashier/md-http-server/config-schema.json",
+  "title": "md-http-server Configuration",
+  "description": "Configuration schema for md-http-server",
+  "type": "object",
+  "properties": {
+    "directory": {
+      "type": "string",
+      "description": "Directory to serve markdown files from",
+      "default": "."
+    },
+    "port": {
+      "type": "integer",
+      "description": "Server port number",
+      "minimum": 1,
+      "maximum": 65535,
+      "default": 3000
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose logging",
+      "default": false
+    },
+    "watch": {
+      "type": "boolean",
+      "description": "Enable live reload on file changes",
+      "default": false
+    },
+    "watchDebounce": {
+      "type": "integer",
+      "description": "Debounce delay for file changes in milliseconds",
+      "minimum": 0,
+      "default": 500
+    },
+    "authProvider": {
+      "type": ["string", "null"],
+      "description": "OAuth provider to use for authentication (null = disabled)",
+      "enum": ["GOOGLE", null],
+      "default": null
+    },
+    "authConfig": {
+      "type": "object",
+      "description": "Provider-specific authentication settings (required when authProvider is set)",
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "OAuth Client ID (supports ${ENV_VAR} syntax)"
+        },
+        "clientSecret": {
+          "type": "string",
+          "description": "OAuth Client Secret (supports ${ENV_VAR} syntax)"
+        },
+        "sessionSecret": {
+          "type": "string",
+          "description": "Session encryption secret (supports ${ENV_VAR} syntax)"
+        },
+        "allowedEmails": {
+          "type": "array",
+          "description": "List of allowed email addresses",
+          "items": {
+            "type": "string",
+            "format": "email"
+          },
+          "default": []
+        },
+        "allowedDomains": {
+          "type": "array",
+          "description": "List of allowed email domains",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "callbackUrl": {
+          "type": "string",
+          "description": "OAuth callback URL (auto-detected if not specified)",
+          "format": "uri"
+        }
+      },
+      "required": ["clientId", "clientSecret", "sessionSecret"],
+      "additionalProperties": false
+    }
+  },
+  "if": {
+    "properties": {
+      "authProvider": { "type": "string" }
+    },
+    "required": ["authProvider"]
+  },
+  "then": {
+    "required": ["authConfig"]
+  },
+  "additionalProperties": true
+}

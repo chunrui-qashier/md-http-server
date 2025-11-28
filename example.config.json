@@ -1,0 +1,7 @@
+{
+  "directory": "./docs",
+  "port": 3000,
+  "verbose": true,
+  "watch": true,
+  "watchDebounce": 500
+}

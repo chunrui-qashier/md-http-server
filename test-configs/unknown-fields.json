@@ -1,0 +1,6 @@
+{
+  "directory": "./docs",
+  "port": 3000,
+  "unknownField": "this will trigger a warning",
+  "anotherUnknown": 123
+}
